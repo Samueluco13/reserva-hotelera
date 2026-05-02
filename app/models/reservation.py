@@ -1,9 +1,6 @@
 from datetime import datetime
 from enum import Enum
 
-from user import User
-from room import Room
-
 from sqlmodel import SQLModel, Field, Relationship
 
 """Modelo para las opciones del ENUM del estado de la reserva"""
@@ -26,7 +23,11 @@ class Reservation(ReservationBase, table = True):
     id: int | None  = Field(default=None, primary_key=True)
 
     room_number: int = Field(foreign_key="room.number") #Llave foranea hacia la tabla "room"
-    room: Room = Relationship(back_populates="reservations") #Relación que se crea con la tabla "room"
+    room: "Room" = Relationship(back_populates="reservations") #Relación que se crea con la tabla "room"
 
     user_id: int = Field(foreign_key="user.id") #Llave foranea hacia la tabla "user"
-    user: User = Relationship(back_populates="reservations") #Relación que se crea con la tabla "user"
+    user: "User" = Relationship(back_populates="reservations") #Relación que se crea con la tabla "user"
+
+#Se deben importar al final para la importación circular
+from .user import User
+from .room import Room
