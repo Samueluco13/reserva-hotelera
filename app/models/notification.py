@@ -1,14 +1,18 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from user import User
 
-class NotificationBase(BaseModel):
-    created_at: datetime
+from sqlmodel import SQLModel, Field, Relationship
+
+class NotificationBase(SQLModel):
+    created_at: datetime = Field(default_factory=datetime.now())
     content: str
-    guest_id: int
 
 class NotificationCreate(NotificationBase):
     pass
 
-class Notification(NotificationBase):
-    id: int | None = None
+class Notification(NotificationBase, table=True):
+    __tablename__ = "notification"
+    id: int | None = Field(default=None, primary_key=True)
+    user_id: int = Field(foreign_key="user.id") #Llave foranea hacia la tabla "user"
+    user: User = Relationship(back_populates="notifications") #Rleación que se crea con la tabla "user"
