@@ -5,18 +5,22 @@ from sqlmodel import SQLModel, Field, Relationship
 
 """Modelo para las opciones del ENUM del estado de la reserva"""
 class StatusEnum(str, Enum):
-    ACTIVE = "active"
-    CANCELLED = "cancelled"
-    COMPLETED = "completed"
+    active = "active"
+    cancelled = "cancelled"
+    completed = "completed"
 
 class ReservationBase(SQLModel):
     created_at: datetime = Field(default_factory=datetime.now())
     checkin_date: datetime | None = None
     checkout_date: datetime | None = None
-    status: StatusEnum = Field(default=StatusEnum.ACTIVE)
+    status: StatusEnum = Field(default=StatusEnum.active)
 
 class ReservationCreate(ReservationBase):
     pass
+
+class ReservationUpdate(ReservationBase):
+    created_at: datetime | None = None
+    status: StatusEnum | None = None
 
 class Reservation(ReservationBase, table = True):
     __tablename__ = "reservation"

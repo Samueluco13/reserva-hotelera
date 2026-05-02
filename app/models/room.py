@@ -1,20 +1,22 @@
 from enum import Enum
 
-# from .room_type import RoomType
-# from .reservation import Reservation
-
 from sqlmodel import SQLModel, Field, Relationship
 
+"""Modelo para las opciones del ENUM del estado de la habitación"""
 class StatusEnum(str, Enum):
-    RESERVED = "reserved"
-    OCCUPIED = "occupied"
-    AVAILABLE = "available"
+    reserved = "reserved"
+    occupied = "occupied"
+    available = "available"
 
 class RoomBase(SQLModel):
-    status: StatusEnum = Field(default = StatusEnum.AVAILABLE)
+    status: StatusEnum = Field(default = StatusEnum.available)
 
 class RoomCreate(RoomBase):
     pass
+
+"""Modelo para actualizar el estado de la habitación"""
+class RoomUpdate(RoomBase):
+    status: StatusEnum | None = None
 
 class Room(RoomBase, table = True):
     __tablename__ = "room"

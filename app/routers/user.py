@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from sqlmodel import select
 
 from app.db import session
-from ..models.user import User, UserCreate
+from ..models.user import User, UserCreate, UserUpdate
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -42,7 +42,7 @@ async def delete_user_by_id(user_id: int, session: session):
     return {"message": "User deleted successfully"}
 
 @router.patch("/{user_id}", status_code = status.HTTP_200_OK)
-async def update_user(user_id: int, user: UserCreate, session: session):
+async def update_user(user_id: int, user: UserUpdate, session: session):
     user_db = session.get(User, user_id)
     if not user_db:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail = "User not found")

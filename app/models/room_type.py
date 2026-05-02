@@ -1,5 +1,3 @@
-# from .room import Room
-
 from sqlmodel import SQLModel, Field, Relationship
 
 class RoomTypeBase(SQLModel):
@@ -8,6 +6,10 @@ class RoomTypeBase(SQLModel):
 
 class RoomTypeCreate(RoomTypeBase):
     pass
+
+"""Modelo para actualizar el precio de un tipo de habitación"""
+class RoomTypeUpdate(RoomTypeBase):
+    price: float | None = None    
 
 class RoomType(RoomTypeBase, table = True):
     __tablename__ = "room_type" #Se especifica el nombre de la tabla a como se encuentra en la base de datos

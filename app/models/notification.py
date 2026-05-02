@@ -1,7 +1,5 @@
 from datetime import datetime
 
-# from .user import User
-
 from sqlmodel import SQLModel, Field, Relationship
 
 class NotificationBase(SQLModel):
