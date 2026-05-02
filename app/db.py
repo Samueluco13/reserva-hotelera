@@ -14,8 +14,8 @@ db_host = os.getenv("HOST_DB")
 db_port = os.getenv("PORT_DB")
 db_name = os.getenv("NAME_DB")
 
-mysql_url = f"mysql://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
-engine =create_engine(mysql_url)
+mysql_url = f"mysql+mysqldb://{db_user}:{db_password}@{db_host}:{db_port}/{db_name}"
+engine = create_engine(mysql_url)
 
 """Función para obtener la sesión de la base de datos"""
 def get_session():
