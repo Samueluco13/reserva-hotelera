@@ -10,21 +10,23 @@ class StatusEnum(str, Enum):
 
 class RoomBase(SQLModel):
     status: StatusEnum = Field(default = StatusEnum.available)
+    type_id: int = Field(foreign_key="room_type.id") #Llave foranea hacia la tabla "room_type"
 
 class RoomCreate(RoomBase):
-    pass
+    number: int
 
-"""Modelo para actualizar el estado de la habitación"""
+"""Modelo para actualizar la habitación"""
 class RoomUpdate(RoomBase):
     status: StatusEnum | None = None
+    type_id: int  | None = None
 
 class Room(RoomBase, table = True):
     __tablename__ = "room"
+
     number: int = Field(primary_key=True)
 
     reservations: list["Reservation"] = Relationship(back_populates="room") #Relación que se crea con la tabla "reservation"
 
-    type_id: int = Field(foreign_key="room_type.id") #Llave foranea hacia la tabla "room_type"
     room_type: "RoomType" = Relationship(back_populates="rooms") #Relación que se crea con la tabla "reservation"
 
 #Se deben importar al final para la importación circular

@@ -5,8 +5,7 @@ from typing import Annotated
 from fastapi import Depends
 from sqlmodel import create_engine, Session
 
-"""Se cargan las variables de entorno
-para crear el motor de la base de datos"""
+"""Se cargan las variables de entorno para crear el motor de la base de datos"""
 load_dotenv()
 db_user = os.getenv("USER_DB")
 db_password = os.getenv("PASSWORD_DB")

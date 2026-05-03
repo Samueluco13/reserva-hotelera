@@ -1,9 +1,10 @@
-from fastapi import APIRouter, HTTPException, status
+from fastapi import APIRouter, status
 from sqlmodel import select
 
 from app.db import session
 from ..models.user import User, UserCreate, UserUpdate
 
+from ..utils.errors import not_found_error
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -21,34 +22,34 @@ async def create_user(user: UserCreate, session: session):
 async def get_user_by_id(user_id: int, session: session):
     user = session.get(User, user_id)
     if not user:
-        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = "User not found")
+        not_found_error(User, "user")
     return user
 
 @router.get("", response_model = list[User], status_code = status.HTTP_200_OK)
 async def get_all_users(session: session):
     users = session.exec(select(User)).all()
     if not users:
-        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = "There are no users")
+        not_found_error(list, "user")
     return users
 
 @router.delete("/{user_id}", status_code = status.HTTP_200_OK)
 async def delete_user_by_id(user_id: int, session: session):
     user_to_delete = session.get(User, user_id)
     if not user_to_delete:
-        raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = "User not found")
+        not_found_error(User, "user")
     
     session.delete(user_to_delete)
     session.commit()
     return {"message": "User deleted successfully"}
 
-@router.patch("/{user_id}", status_code = status.HTTP_200_OK)
+@router.patch("/{user_id}", response_model = User, status_code = status.HTTP_200_OK)
 async def update_user(user_id: int, user: UserUpdate, session: session):
     user_db = session.get(User, user_id)
     if not user_db:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail = "User not found")
-    
-    user_dict = user.model_dump(exclude_unset=True)
-    user_db.sqlmodel_update(user_dict)
+        not_found_error(User, "user")
+
+    user_data_dict = user.model_dump(exclude_unset=True)
+    user_db.sqlmodel_update(user_data_dict)
     
     session.add(user_db)
     session.commit()
