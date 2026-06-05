@@ -1,23 +1,24 @@
 from fastapi import APIRouter, status, Depends
 from pydantic import EmailStr
-from sqlmodel import Session
 
-from app.db import get_session
-from app.repositories.user_repository import UserRepository
+from app.db import session
 from ..models.user import User, UserCreate, UserUpdate
+
 from ..utils.errors import not_found_error
+
+from app.repositories.user import UserRepository
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-def get_user_repository(session: Session = Depends(get_session)) -> UserRepository:
-    """Dependency to inject UserRepository"""
+def get_user_repository(session: session) -> UserRepository:
     return UserRepository(session)
 
 
 @router.post("", response_model=User, status_code=status.HTTP_201_CREATED)
-async def create_user(user: UserCreate, repo: UserRepository = Depends(get_user_repository)):
-    return repo.create(user)
+async def create_user(user_data: UserCreate, repo: UserRepository = Depends(get_user_repository)):
+    user = repo.create(user_data)
+    return user
 
 
 @router.get("", response_model=list[User], status_code=status.HTTP_200_OK)
