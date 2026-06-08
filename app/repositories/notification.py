@@ -14,18 +14,12 @@ class NotificationRepository:
         return notification
 
     def get_by_id(self, notification_id: int) -> Notification | None:
-        notification = self.session.get(Notification, notification_id)
-        if not notification:
-            return None
-        return notification
+        return self.session.get(Notification, notification_id)
     
     def get_all(self) -> list[Notification]:
         return self.session.exec(select(Notification)).all()
     
-    def delete(self, notification_id: int) -> bool:
-        notification = self.session.get(Notification, notification_id)
-        if not notification:
-            return False
-        self.session.delete(notification)
+    def delete(self, notification_to_delete: Notification) -> bool:
+        self.session.delete(notification_to_delete)
         self.session.commit()
         return True

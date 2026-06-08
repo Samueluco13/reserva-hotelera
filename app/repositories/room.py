@@ -19,23 +19,16 @@ class RoomRepository:
     def get_all(self) -> list[Room]:
         return self.session.exec(select(Room)).all()
     
-    def delete(self, room_number: int) -> bool:
-        room = self.session.get(Room, room_number)
-        if not room:
-            return False
-        self.session.delete(room)
-        self.session.commit()
-        return True
-    
-    def update(self, room_number: int, room_data: RoomUpdate) -> Room | None:
-        room_db = self.session.get(Room, room_number)
-        if not room_db:
-            return None
-        
-        room_data_dict = room_data.model_dump(exclude_unset = True)
+    def update(self, room_db: Room, room_data: RoomUpdate) -> Room | None:
+        room_data_dict = room_data.model_dump(exclude_unset=True)
         room_db.sqlmodel_update(room_data_dict)
 
         self.session.add(room_db)
         self.session.commit()
         self.session.refresh(room_db)
         return room_db
+    
+    def delete(self, room_db: Room) -> bool:
+        self.session.delete(room_db)
+        self.session.commit()
+        return True

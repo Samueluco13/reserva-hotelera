@@ -1,13 +1,12 @@
 from fastapi import APIRouter, status
-from fastapi.params import Depends
-from sqlmodel import select
 
 from app.db import session
 from ..models.room_type import RoomType, RoomTypeCreate, RoomTypeUpdate
 
-from ..utils.errors import not_found_error
+from app.service.room_type import create_rt, get_rt_by_id, get_rt_by_name, get_all_rt, update_rt, delete_rt
 
 from app.repositories.room_type import RoomTypeRepository
+from app.utils.dependencies import room_type_repo
 
 router = APIRouter(prefix="/room_types", tags=["room_types"])
 
@@ -15,34 +14,25 @@ def get_room_type_repository(session: session):
     return RoomTypeRepository(session)
 
 @router.post("", response_model=RoomType, status_code=status.HTTP_200_OK)
-async def create_room_type(room_type_data: RoomTypeCreate, repo: RoomTypeRepository = Depends(get_room_type_repository)):
-    return repo.create(room_type_data)
+async def create_room_type(room_type_data: RoomTypeCreate, repo: room_type_repo):
+    return create_rt(room_type_data, repo)
 
 @router.get("/{room_type_id}", response_model=RoomType, status_code = status.HTTP_200_OK)
-async def get_room_type_by_id(room_type_id: int, repo: RoomTypeRepository = Depends(get_room_type_repository)):
-    room_type = repo.get_by_id(room_type_id)
-    if not room_type:
-        not_found_error(RoomType, "room type")
-    return room_type
+async def get_room_type_by_id(room_type_id: int, repo: room_type_repo):
+    return get_rt_by_id(room_type_id, repo)
+
+@router.get("/name/{room_type_name}", response_model=RoomType, status_code = status.HTTP_200_OK)
+async def get_room_type_by_name(room_type_name: str, repo: room_type_repo):
+    return get_rt_by_name(room_type_name, repo)
 
 @router.get("", response_model= list[RoomType], status_code = status.HTTP_200_OK)
-async def get_all_room_types(repo: RoomTypeRepository = Depends(get_room_type_repository)):
-    room_types = repo.get_all()
-    if not room_types:
-        not_found_error(list, "room type")
-    return room_types
+async def get_all_room_types(repo: room_type_repo):
+    return get_all_rt(repo)
 
-@router.delete("/{room_type_id}", status_code=status.HTTP_200_OK)
-async def delete_rrom_type(room_type_id: int, repo: RoomTypeRepository = Depends(get_room_type_repository)):
-    deleted = repo.delete(room_type_id)
-    if not deleted:
-        not_found_error(RoomType, "room type")
-    return {"message" : "Room type deleted successfully"}
+@router.patch("/{room_type_name}", response_model=RoomType, status_code=status.HTTP_200_OK)
+async def update_room_type(room_type_name: str, room_type_data: RoomTypeUpdate, repo: room_type_repo):
+    return update_rt(room_type_name, room_type_data, repo)
 
-@router.patch("/{room_type_id}", response_model=RoomType, status_code=status.HTTP_200_OK)
-async def update_room_type(room_type_id: int, room_type_data: RoomTypeUpdate, repo: RoomTypeRepository = Depends(get_room_type_repository)):
-    room_type_db = repo.update(room_type_id, room_type_data)
-    if not room_type_db:
-        not_found_error(RoomType, "room type")
-    return room_type_db
-
+@router.delete("/{room_type_name}", status_code=status.HTTP_200_OK)
+async def delete_room_type(room_type_name: str, repo: room_type_repo):
+    return delete_rt(room_type_name, repo)

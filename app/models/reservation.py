@@ -10,18 +10,28 @@ class StatusEnum(str, Enum):
     completed = "completed"
 
 class ReservationBase(SQLModel):
-    created_at: datetime = Field(default_factory=datetime.now())
+    created_at: datetime = Field(default_factory=datetime.now)
     checkin_date: datetime | None = None
     checkout_date: datetime | None = None
     status: StatusEnum = Field(default=StatusEnum.active)
     room_number: int = Field(foreign_key="room.number") #Llave foranea hacia la tabla "room"
     user_id: int = Field(foreign_key="user.id") #Llave foranea hacia la tabla "user"
 
-class ReservationCreate(ReservationBase):
-    pass
+class ReservationCreate(SQLModel):
+    checkin_date: datetime | None = None
+    checkout_date: datetime | None = None
+    room_number: int
+    user_id: int
 
-class ReservationUpdate(ReservationBase):
-    created_at: datetime | None = None
+class ReservationCreateStaff(SQLModel):
+    user_email: str
+    checkin_date: datetime | None = None
+    checkout_date: datetime | None = None
+    room_number: int
+
+class ReservationUpdate(SQLModel):
+    checkin_date: datetime | None = None
+    checkout_date: datetime | None = None
     status: StatusEnum | None = None
     room_number: int | None = None
     user_id: int | None = None
@@ -34,6 +44,6 @@ class Reservation(ReservationBase, table = True):
 
     user: "User" = Relationship(back_populates="reservations") #Relación que se crea con la tabla "user"
 
-#Se deben importar al final para la importación circular
+#Se deben importar al final para evitar la importación circular
 from .user import User
 from .room import Room

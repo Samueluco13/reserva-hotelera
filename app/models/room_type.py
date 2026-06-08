@@ -8,7 +8,7 @@ class RoomTypeCreate(RoomTypeBase):
     pass
 
 """Modelo para actualizar el precio de un tipo de habitación"""
-class RoomTypeUpdate(RoomTypeBase):
+class RoomTypeUpdate(SQLModel):
     price: float | None = None    
 
 class RoomType(RoomTypeBase, table = True):

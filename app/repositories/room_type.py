@@ -1,5 +1,5 @@
 from sqlmodel import Session, select
-from app.models.room import RoomType, RoomTypeCreate, RoomTypeUpdate
+from app.models.room_type import RoomType, RoomTypeCreate, RoomTypeUpdate
 
 class RoomTypeRepository:
     def __init__ (self, session: Session):
@@ -14,31 +14,25 @@ class RoomTypeRepository:
         return room_type
     
     def get_by_id(self, room_type_id: int) -> RoomType | None:
-        room_type = self.session.get(RoomType, room_type_id)
-        if not room_type:
-            return None
-        return room_type
+        return self.session.get(RoomType, room_type_id)
+    
+    def get_by_name(self, name: str) -> RoomType | None:
+        query = select(RoomType).where(RoomType.name == name)
+        return self.session.exec(query).first()
 
     def get_all(self) -> list[RoomType]:
         return self.session.exec(select(RoomType)).all()
-
-    def delete(self, room_type_id: int) -> bool:
-        room_type = self.session.get(RoomType, room_type_id)
-        if not room_type:
-            return False
-        self.session.delete(room_type)
-        self.session.commit()
-        return True
     
-    def update(self, room_type_id: int, room_type_data: RoomTypeUpdate) -> RoomType | None:
-        room_type_db = self.session.get(RoomType, room_type_id)
-        if not room_type_db:
-            return None
-        
-        room_type_dict = room_type_data.model_dump(exclude_unset=True)
-        room_type_db.sqlmodel_update(room_type_dict)
+    def update(self, room_type_db: RoomType, room_type_data: RoomTypeUpdate) -> RoomType | None:
+        room_type_db.sqlmodel_update(room_type_data)
 
         self.session.add(room_type_db)
         self.session.commit()
         self.session.refresh(room_type_db)
         return room_type_db
+
+    def delete(self, room_type: RoomType) -> bool:
+        self.session.delete(room_type)
+        self.session.commit()
+        return True
+    

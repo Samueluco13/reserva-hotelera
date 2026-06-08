@@ -24,23 +24,15 @@ class UserRepository:
     def get_all(self) -> list[User]:
         return self.session.exec(select(User)).all()
 
-    def update(self, user_id: int, user: UserUpdate) -> User | None:
-        user_db = self.session.get(User, user_id)
-        if not user_db:
-            return None
-        
-        user_data_dict = user.model_dump(exclude_unset=True)
+    def update(self, user_db: User, user_data: UserUpdate) -> User | None: 
+        user_data_dict = user_data.model_dump(exclude_unset=True)
         user_db.sqlmodel_update(user_data_dict)
         self.session.add(user_db)
         self.session.commit()
         self.session.refresh(user_db)
         return user_db
 
-    def delete(self, user_id: int) -> bool:
-        user_to_delete = self.session.get(User, user_id)
-        if not user_to_delete:
-            return False
-        
+    def delete(self, user_to_delete: User) -> bool:        
         self.session.delete(user_to_delete)
         self.session.commit()
         return True

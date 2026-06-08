@@ -1,39 +1,25 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, status
 
-from app.db import session
 from ..models.notification import Notification, NotificationCreate
 
-from ..utils.errors import not_found_error
+from app.utils.dependencies import notification_repo
 
-from app.repositories.notification import NotificationRepository
+from app.service.notification import create_noti, get_noti_by_id, get_all_noti, delete_noti
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
-def get_notification_repository(session: session):
-    return NotificationRepository(session)
-
 @router.post("", response_model=Notification, status_code=status.HTTP_201_CREATED)
-async def create_notification(notification_data: NotificationCreate, repo: NotificationRepository = Depends(get_notification_repository)):
-    notification = repo.create(notification_data)
-    return notification
+async def create_notification(notification_data: NotificationCreate, repo: notification_repo):
+    return create_noti(notification_data, repo)
 
 @router.get("/{notification_id}", response_model=Notification, status_code=status.HTTP_200_OK)
-async def get_notification_by_id(notification_id: int, repo: NotificationRepository = Depends(get_notification_repository)):
-    notification = repo.get_by_id(notification_id)
-    if not notification:
-        not_found_error(Notification, "notification")
-    return notification
+async def get_notification_by_id(notification_id: int, repo: notification_repo):
+    return get_noti_by_id(notification_id, repo)
 
 @router.get("", response_model = list[Notification], status_code=status.HTTP_200_OK)
-async def get_all_notifications(repo: NotificationRepository = Depends(get_notification_repository)):
-    notifications = repo.get_all()
-    if not notifications:
-        not_found_error(list, "notification")
-    return notifications
+async def get_all_notifications(repo: notification_repo):
+    return get_all_noti(repo)
 
 @router.delete("/{notification_id}", status_code=status.HTTP_200_OK)
-async def delete_notification_by_id(notification_id: int, repo: NotificationRepository = Depends(get_notification_repository)):
-    deleted = repo.delete(notification_id)
-    if not deleted:
-        not_found_error(Notification, "notification")
-    return {"message" : "Notification deleted successfully"}
+async def delete_notification_by_id(notification_id: int, repo: notification_repo):
+    return delete_noti(notification_id, repo)
