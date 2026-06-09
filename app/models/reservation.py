@@ -11,6 +11,7 @@ class StatusEnum(str, Enum):
 
 class ReservationBase(SQLModel):
     created_at: datetime = Field(default_factory=datetime.now)
+    last_edit: datetime = Field(default=None, sa_column_kwargs={"onupdate": datetime.now})
     checkin_date: datetime | None = None
     checkout_date: datetime | None = None
     status: StatusEnum = Field(default=StatusEnum.active)

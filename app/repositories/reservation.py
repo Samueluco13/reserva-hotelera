@@ -6,7 +6,9 @@ class ReservationRepository:
         self.session = session
     
     def create(self, reservation_data: ReservationCreate) -> Reservation:
-        reservation = Reservation.model_validate(reservation_data)
+        reservation_dict = reservation_data.model_dump()
+        print(reservation_dict)
+        reservation = Reservation.model_validate(reservation_dict)
         self.session.add(reservation)
         self.session.commit()
         self.session.refresh(reservation)

@@ -3,12 +3,13 @@ from datetime import datetime
 from sqlmodel import SQLModel, Field, Relationship
 
 class NotificationBase(SQLModel):
-    created_at: datetime = Field(default_factory=datetime.now())
+    created_at: datetime = Field(default_factory=datetime.now)
     content: str
     user_id: int = Field(foreign_key="user.id") #Llave foranea hacia la tabla "user"
 
-class NotificationCreate(NotificationBase):
-    pass
+class NotificationCreate(SQLModel):
+    content: str
+    user_id: int
 
 class Notification(NotificationBase, table=True):
     __tablename__ = "notification"
