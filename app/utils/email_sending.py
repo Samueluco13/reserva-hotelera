@@ -9,9 +9,6 @@ server_port = os.getenv('SERVER_PORT')
 email_user = os.getenv('EMAIL_USER')
 app_password = os.getenv('APP_PASSWORD')
 
-email_server = smtplib.SMTP("smtp.gmail.com", server_port)
-email_server.starttls()
-email_server.login(email_user, app_password)
 
 def send_email(subject: str, body: str, receiver: str):
 
@@ -23,8 +20,10 @@ def send_email(subject: str, body: str, receiver: str):
     message.attach(MIMEText(body, "plain"))
     
     try:
+        email_server = smtplib.SMTP("smtp.gmail.com", server_port)
+        email_server.starttls()
+        email_server.login(email_user, app_password)
         email_server.sendmail(email_user, receiver, message.as_string())
-        email_server.quit()
     except smtplib.SMTPException as e:
         print(f"Error SMTP: {e}")
     except Exception as e:

@@ -1,6 +1,8 @@
 from app.models.user import User
 from app.models.room import Room
 
+from app.service.notification import create_noti
+
 from app.repositories.user import UserRepository
 from app.repositories.room import RoomRepository
 from app.repositories.reservation import ReservationRepository
@@ -31,19 +33,16 @@ def _creation_helper(reservation_data, user_id, room_repo: RoomRepository, reser
     res_info = f"""\
         Tu reserva ha sido creada exitosamente.
         Tu habitación: {room.number}
-        Fecha y hora del checkin: {checkin_string}
+        Fecha y hora del check-in: {checkin_string}
         """
 
     notification_data = NotificationCreate(
         content = res_info,
         user_id = user_id
     )
-
-    user = user_repo.get_by_id(user_id)
-
+    
     reservation = reservation_repo.create(reservation_info)
-    notification_repo.create(notification_data)
-    send_email("Información de su reserva", res_info, user.email)
+    create_noti(notification_data, notification_repo, user_repo,"Información de su reserva")
     return reservation
 
 def create_reservation_user(reservation_data, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
@@ -69,7 +68,7 @@ def get_all_res(repo: ReservationRepository):
         not_found_error(list, "reservation")
     return reservations
 
-def update_res(reservation_id: int, reservation_data, reservation_repo: ReservationRepository, notification_repo: NotificationRepository):
+def update_res(reservation_id: int, reservation_data, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
     reservation_db = reservation_repo.get_by_id(reservation_id)
     if not reservation_db:
         not_found_error(Reservation, "reservation")
@@ -79,32 +78,35 @@ def update_res(reservation_id: int, reservation_data, reservation_repo: Reservat
     checkin_string = date_format_string(reservation.checkin_date)
     checkout_string = date_format_string(reservation.checkout_date)
 
-    notification_data = NotificationCreate(
-        content = f"""\
+    update_info = f"""\
             Tu reserva ha sido actualizada la nueva información es:
             Tu fecha y hora del check-in: {checkin_string}
             Tu fecha y hora del check-out: {checkout_string}
             Tu habitación: {reservation.room_number}
             Estado de tu reserva: {reservation.status.value}
-        """,
+        """
+
+    notification_data = NotificationCreate(
+        content = update_info,
         user_id = reservation.user_id
     )
 
-    notification_repo.create(notification_data)
+    create_noti(notification_data, notification_repo, user_repo, "Actualización de tu reserva")
     return reservation
 
-def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_repo: ReservationRepository, notification_repo: NotificationRepository):
+def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
     reservation = reservation_repo.get_by_id(reservation_id)
     if not reservation:
         not_found_error(Reservation, "reservation")
     match new_status:
         case StatusEnum.cancelled:
+            subject = "Sobre su reserva"
             message = f"""\
                 Tu reserva ha sido cancelada
             """
         case StatusEnum.completed:
+            subject = "Gracias por tu estadía"
             message = f"""\
-            Gracias por tu estadía
                 Tu reserva ha finalizado. Esperamos que hayas disfrutado tu estancia y que hayas tenido una excelente experiencia con nosotros.
                 ¡Esperamos recibirte nuevamente muy pronto!
             """
@@ -118,7 +120,7 @@ def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_r
         user_id = reservation.user_id
     )
 
-    notification_repo.create(notification_data)
+    create_noti(notification_data, notification_repo, user_repo, subject)
     return reservation
 
 def delete_res(reservation_id: int, reservation_repo: ReservationRepository, notification_repo: NotificationRepository):
