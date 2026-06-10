@@ -1,6 +1,5 @@
 from fastapi import APIRouter, status
 
-from app.db import session
 from ..models.room_type import RoomType, RoomTypeCreate, RoomTypeUpdate
 
 from app.service.room_type import create_rt, get_rt_by_id, get_rt_by_name, get_all_rt, update_rt, delete_rt
@@ -9,10 +8,6 @@ from app.repositories.room_type import RoomTypeRepository
 from app.utils.dependencies import room_type_repo
 
 router = APIRouter(prefix="/room_types", tags=["room_types"])
-
-def get_room_type_repository(session: session):
-    return RoomTypeRepository(session)
-
 @router.post("", response_model=RoomType, status_code=status.HTTP_200_OK)
 async def create_room_type(room_type_data: RoomTypeCreate, repo: room_type_repo):
     return create_rt(room_type_data, repo)

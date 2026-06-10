@@ -11,9 +11,10 @@ from app.models.notification import NotificationCreate
 
 from app.utils.errors import not_found_error
 from app.utils.formats import date_format_string
+from app.utils.email_sending import send_email
 
 """Funcion que ayuda a crear una reserva, se utiliza en la creacion por parte de staff y por parte del mismo usuario"""
-def _creation_helper(reservation_data, user_id, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository):
+def _creation_helper(reservation_data, user_id, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
     room = room_repo.get_by_number(reservation_data.room_number)
     if not room:
         not_found_error(Room, "room")
@@ -27,28 +28,33 @@ def _creation_helper(reservation_data, user_id, room_repo: RoomRepository, reser
 
     checkin_string = date_format_string(reservation_data.checkin_date)
 
-    notification_data = NotificationCreate(
-        content = f"""\
+    res_info = f"""\
         Tu reserva ha sido creada exitosamente.
         Tu habitación: {room.number}
         Fecha y hora del checkin: {checkin_string}
-        """,
+        """
+
+    notification_data = NotificationCreate(
+        content = res_info,
         user_id = user_id
     )
 
+    user = user_repo.get_by_id(user_id)
+
     reservation = reservation_repo.create(reservation_info)
     notification_repo.create(notification_data)
+    send_email("Información de su reserva", res_info, user.email)
     return reservation
 
-def create_reservation_user(reservation_data, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository):
-    reservation = _creation_helper(reservation_data, reservation_data.user_id, room_repo, reservation_repo, notification_repo)
+def create_reservation_user(reservation_data, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
+    reservation = _creation_helper(reservation_data, reservation_data.user_id, room_repo, reservation_repo, notification_repo, user_repo)
     return reservation
 
 def create_reservation_staff(reservation_data, user_repo: UserRepository, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository):
     user = user_repo.get_by_email(reservation_data.user_email)
     if not user:
         not_found_error(User, "user")
-    reservation = _creation_helper(reservation_data, user.id, room_repo, reservation_repo, notification_repo)
+    reservation = _creation_helper(reservation_data, user.id, room_repo, reservation_repo, notification_repo, user_repo)
     return reservation
 
 def get_res_by_id(reservation_id: int, repo: ReservationRepository):

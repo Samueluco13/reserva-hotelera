@@ -10,8 +10,8 @@ from app.utils.dependencies import user_repo, room_repo, reservation_repo, notif
 router = APIRouter(prefix="/reservations", tags=["reservations"])
 
 @router.post("", response_model= Reservation , status_code = status.HTTP_201_CREATED)
-async def create_resservation_by_user(reservation_data: ReservationCreate, room_repo: room_repo, reservation_repo: reservation_repo, noti_repo: notification_repo):
-    return create_reservation_user(reservation_data, room_repo, reservation_repo, noti_repo)
+async def create_resservation_by_user(reservation_data: ReservationCreate, room_repo: room_repo, reservation_repo: reservation_repo, noti_repo: notification_repo, user_repo: user_repo):
+    return create_reservation_user(reservation_data, room_repo, reservation_repo, noti_repo, user_repo)
 
 @router.post("/staff", response_model = Reservation, status_code = status.HTTP_201_CREATED)
 async def create_resservation_by_staff(reservation_data: ReservationCreateStaff, user_repo: user_repo, room_repo: room_repo, reservation_repo: reservation_repo, noti_repo: notification_repo):

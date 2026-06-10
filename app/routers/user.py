@@ -1,7 +1,7 @@
 from fastapi import APIRouter, status, Depends
 from pydantic import EmailStr
 
-from app.db import session
+from app.utils.db import session
 from ..models.user import User, UserCreate, UserUpdate
 
 from app.service.user import create_u, get_all_u, get_u_by_email, get_u_by_id, update_u, delete_u

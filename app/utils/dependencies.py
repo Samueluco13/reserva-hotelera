@@ -1,4 +1,4 @@
-from app.db import session
+from app.utils.db import session
 
 from typing import Annotated
 from fastapi import Depends

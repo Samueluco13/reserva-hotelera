@@ -7,7 +7,6 @@ class ReservationRepository:
     
     def create(self, reservation_data: ReservationCreate) -> Reservation:
         reservation_dict = reservation_data.model_dump()
-        print(reservation_dict)
         reservation = Reservation.model_validate(reservation_dict)
         self.session.add(reservation)
         self.session.commit()
