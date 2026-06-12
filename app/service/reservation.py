@@ -1,6 +1,10 @@
+import os
+from dotenv import load_dotenv
+
 from app.models.user import User
 from app.models.room import Room
 
+from app.service.google_calendar import create_event
 from app.service.notification import create_noti
 
 from app.repositories.user import UserRepository
@@ -11,9 +15,13 @@ from app.repositories.notification import NotificationRepository
 from app.models.reservation import Reservation, ReservationCreate, ReservationUpdate, StatusEnum
 from app.models.notification import NotificationCreate
 
+from app.service.user import get_u_by_id
 from app.utils.errors import not_found_error
 from app.utils.formats import date_format_string
-from app.utils.email_sending import send_email
+
+load_dotenv()
+
+email_user = os.getenv('EMAIL_USER')
 
 """Funcion que ayuda a crear una reserva, se utiliza en la creacion por parte de staff y por parte del mismo usuario"""
 def _creation_helper(reservation_data, user_id, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
@@ -40,8 +48,11 @@ def _creation_helper(reservation_data, user_id, room_repo: RoomRepository, reser
         content = res_info,
         user_id = user_id
     )
+
+    user = get_u_by_id(user_id, user_repo)
     
     reservation = reservation_repo.create(reservation_info)
+    create_event(reservation_data.room_number, reservation_data.checkin_date, reservation_data.checkout_date, "America/Bogota", [email_user, user.email])
     create_noti(notification_data, notification_repo, user_repo,"Información de su reserva")
     return reservation
 

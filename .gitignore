@@ -1,3 +1,5 @@
 venv/
 .env
 __pycache__/
+calendar_*.json
+token.json
