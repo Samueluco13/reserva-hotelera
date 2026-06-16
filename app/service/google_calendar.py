@@ -26,8 +26,8 @@ def _authenticate():
         else:
             flow = InstalledAppFlow.from_client_secrets_file(
             "calendar_desktop_credentials.json", SCOPES
-        )
-        creds = flow.run_local_server(port=8080, open_browser=True)
+            )
+            creds = flow.run_local_server(port=8080, open_browser=True)
         with open("token.json", "w") as token:
             token.write(creds.to_json())
     #Devuelve un objeto de calendar desde del cual podemos acceder al las acciones de la API
@@ -37,11 +37,11 @@ def create_event(summary: int, start_time: datetime, end_time: datetime, timezon
     event_data = {
         "summary": f"Reservation room {summary}",
         "start": {
-            "dateTime": start_time.isoformat(),
+            "dateTime": start_time.strftime('%Y-%m-%dT%H:%M:%S'),
             "timeZone": timezone
         },
         "end": {
-            "dateTime": end_time.isoformat(),
+            "dateTime": end_time.strftime('%Y-%m-%dT%H:%M:%S'),
             "timeZone": timezone
         }
     }
@@ -72,7 +72,9 @@ def get_upcoming_events():
     if not events_list:
         print("There is no upcoming events in 7 days")
     else:
-        print([{"Evento": event["summary"],"Fecha": event["start"].get("dateTime")} for event in events_list])
+        print([{"Evento": event["summary"],
+                "Check In": event["start"].get("dateTime"),
+                "Check Out": event["end"].get("dateTime")} for event in events_list])
         return events_list
     
 def update_event(event_id, summary=None, start_time=None, end_time=None):
@@ -80,13 +82,13 @@ def update_event(event_id, summary=None, start_time=None, end_time=None):
     event = calendar_service.events().get(calendarId="primary", eventId=event_id).execute()
 
     if summary:
-        event['summary'] = summary
+        event['summary'] = f"Reservation room {summary}"
 
     if start_time:
-        event['start']['dateTime'] = start_time
+        event['start']['dateTime'] = start_time.strftime('%Y-%m-%dT%H:%M:%S')
 
     if end_time:
-        event['end']['dateTime'] = end_time
+        event['end']['dateTime'] = end_time.strftime('%Y-%m-%dT%H:%M:%S')
 
     updated_event = calendar_service.events().update(
         calendarId = "primary",

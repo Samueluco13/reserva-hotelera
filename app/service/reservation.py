@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from app.models.user import User
 from app.models.room import Room
 
-from app.service.google_calendar import create_event
+from app.service.google_calendar import create_event, delete_event, get_upcoming_events, update_event
 from app.service.notification import create_noti
 
 from app.repositories.user import UserRepository
@@ -56,6 +56,15 @@ def _creation_helper(reservation_data, user_id, room_repo: RoomRepository, reser
     create_noti(notification_data, notification_repo, user_repo,"Información de su reserva")
     return reservation
 
+def _searching_helper(reservation_db):
+    next_events = get_upcoming_events()
+
+    for event in next_events:
+        if event["summary"] == f"Reservation room {reservation_db.room_number}" and event["start"] == reservation_db.checkin_date:
+            break
+        found_event = event
+    return found_event
+
 def create_reservation_user(reservation_data, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
     reservation = _creation_helper(reservation_data, reservation_data.user_id, room_repo, reservation_repo, notification_repo, user_repo)
     return reservation
@@ -75,6 +84,7 @@ def get_res_by_id(reservation_id: int, repo: ReservationRepository):
 
 def get_all_res(repo: ReservationRepository):
     reservations = repo.get_all()
+    get_upcoming_events()
     if not reservations:
         not_found_error(list, "reservation")
     return reservations
@@ -102,6 +112,23 @@ def update_res(reservation_id: int, reservation_data, reservation_repo: Reservat
         user_id = reservation.user_id
     )
 
+    start_time = None
+    if reservation_data.checkin_date:
+        start_time = reservation_data.checkin_date
+        print("Nueva hora de llegada ", start_time)
+        
+    end_time = None
+    if reservation_data.checkout_date:
+        end_time = reservation_data.checkout_date
+        
+    summary = None
+    if reservation_data.room_number:
+        summary = reservation_data.room_number
+    
+    event_to_update = _searching_helper(reservation_db)
+
+    update_event(event_to_update["id"], summary, start_time, end_time)
+
     create_noti(notification_data, notification_repo, user_repo, "Actualización de tu reserva")
     return reservation
 
@@ -115,6 +142,9 @@ def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_r
             message = f"""\
                 Tu reserva ha sido cancelada
             """
+            # event_to_delete = _searching_helper(reservation)
+            # delete_event(event_to_delete["id"])
+
         case StatusEnum.completed:
             subject = "Gracias por tu estadía"
             message = f"""\
@@ -147,7 +177,10 @@ def delete_res(reservation_id: int, reservation_repo: ReservationRepository, not
         user_id = u_id
     )
 
+    event_to_delete = _searching_helper(reservation)
+
     reservation_to_delete = reservation_repo.get_by_id(reservation_id)
     reservation_repo.delete(reservation_to_delete)
+    delete_event(event_to_delete["id"])
     notification_repo.create(notification_data)
     return {"message": "Reservation deleted successfully"}
