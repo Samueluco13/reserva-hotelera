@@ -1,5 +1,4 @@
-import os
-from dotenv import load_dotenv
+from app.config import get_settings
 
 from app.models.user import User
 from app.models.room import Room
@@ -19,9 +18,9 @@ from app.service.user import get_u_by_id
 from app.utils.errors import not_found_error
 from app.utils.formats import date_format_string
 
-load_dotenv()
+settings = get_settings()
 
-email_user = os.getenv('EMAIL_USER')
+email_user = settings.EMAIL_USER
 
 """Funcion que ayuda a crear una reserva, se utiliza en la creacion por parte de staff y por parte del mismo usuario"""
 def _creation_helper(reservation_data, user_id, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
@@ -142,8 +141,6 @@ def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_r
             message = f"""\
                 Tu reserva ha sido cancelada
             """
-            # event_to_delete = _searching_helper(reservation)
-            # delete_event(event_to_delete["id"])
 
         case StatusEnum.completed:
             subject = "Gracias por tu estadía"
@@ -151,6 +148,8 @@ def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_r
                 Tu reserva ha finalizado. Esperamos que hayas disfrutado tu estancia y que hayas tenido una excelente experiencia con nosotros.
                 ¡Esperamos recibirte nuevamente muy pronto!
             """
+    event_to_delete = _searching_helper(reservation)
+    delete_event(event_to_delete["id"])
     reservation_data = ReservationUpdate(
         status=new_status
     )
