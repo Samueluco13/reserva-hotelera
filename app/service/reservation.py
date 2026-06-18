@@ -11,11 +11,12 @@ from app.repositories.room import RoomRepository
 from app.repositories.reservation import ReservationRepository
 from app.repositories.notification import NotificationRepository
 
-from app.models.reservation import Reservation, ReservationCreate, ReservationUpdate, StatusEnum
+from app.models.reservation import ReservationCreate, ReservationUpdate, StatusEnum
 from app.models.notification import NotificationCreate
 
+from app.exceptions.not_found_exception import NotFoundReservation
+
 from app.service.user import get_u_by_id
-from app.utils.errors import not_found_error
 from app.utils.formats import date_format_string
 
 settings = get_settings()
@@ -78,21 +79,19 @@ def create_reservation_staff(reservation_data, user_repo: UserRepository, room_r
 def get_res_by_id(reservation_id: int, repo: ReservationRepository):
     reservation = repo.get_by_id(reservation_id)
     if not reservation:
-        not_found_error(Reservation, "reservation")
+        raise NotFoundReservation(reservation_id)
     return reservation
 
 def get_all_res(repo: ReservationRepository):
     reservations = repo.get_all()
     get_upcoming_events()
-    if not reservations:
-        not_found_error(list, "reservation")
     return reservations
 
 def update_res(reservation_id: int, reservation_data, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
     reservation_db = reservation_repo.get_by_id(reservation_id)
-    if not reservation_db:
-        not_found_error(Reservation, "reservation")
-
+    if not reservation:
+        raise NotFoundReservation(reservation_id)
+    
     reservation = reservation_repo.update(reservation_db, reservation_data)
 
     checkin_string = date_format_string(reservation.checkin_date)
@@ -134,7 +133,7 @@ def update_res(reservation_id: int, reservation_data, reservation_repo: Reservat
 def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
     reservation = reservation_repo.get_by_id(reservation_id)
     if not reservation:
-        not_found_error(Reservation, "reservation")
+        raise NotFoundReservation(reservation_id)
     match new_status:
         case StatusEnum.cancelled:
             subject = "Sobre su reserva"
@@ -164,10 +163,10 @@ def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_r
     return reservation
 
 def delete_res(reservation_id: int, reservation_repo: ReservationRepository, notification_repo: NotificationRepository):
-    reservation = reservation_repo.get_by_id(reservation_id)
-    if not reservation:
-        not_found_error(Reservation, "reservation")
-    u_id = reservation.user_id
+    reservation_to_delete = reservation_repo.get_by_id(reservation_id)
+    if not reservation_to_delete:
+        raise NotFoundReservation(reservation_id)
+    u_id = reservation_to_delete.user_id
 
     notification_data = NotificationCreate(
         content = f"""\
@@ -176,9 +175,8 @@ def delete_res(reservation_id: int, reservation_repo: ReservationRepository, not
         user_id = u_id
     )
 
-    event_to_delete = _searching_helper(reservation)
+    event_to_delete = _searching_helper(reservation_to_delete)
 
-    reservation_to_delete = reservation_repo.get_by_id(reservation_id)
     reservation_repo.delete(reservation_to_delete)
     delete_event(event_to_delete["id"])
     notification_repo.create(notification_data)
