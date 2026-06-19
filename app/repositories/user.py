@@ -1,6 +1,10 @@
 from sqlmodel import Session, select
 from app.models.user import User, UserCreate, UserUpdate
 
+from app.exceptions.already_exists_exception import AlreadyExistsUserEmail
+
+from sqlalchemy.exc import IntegrityError
+
 
 class UserRepository:
     def __init__(self, session: Session):
@@ -10,7 +14,11 @@ class UserRepository:
         dict_user = user.model_dump()
         db_user = User.model_validate(dict_user)
         self.session.add(db_user)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback() #Para que salga del estado de error
+            raise AlreadyExistsUserEmail(user.email)
         self.session.refresh(db_user)
         return db_user
 
@@ -28,7 +36,11 @@ class UserRepository:
         user_data_dict = user_data.model_dump(exclude_unset=True)
         user_db.sqlmodel_update(user_data_dict)
         self.session.add(user_db)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback() #Para que salga del estado de error
+            raise AlreadyExistsUserEmail(user_data.email)
         self.session.refresh(user_db)
         return user_db
 

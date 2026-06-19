@@ -1,6 +1,10 @@
 from sqlmodel import Session, select
 from app.models.room_type import RoomType, RoomTypeCreate, RoomTypeUpdate
 
+from app.exceptions.already_exists_exception import AlreadyExistsRoomTypeName
+
+from sqlalchemy.exc import IntegrityError
+
 class RoomTypeRepository:
     def __init__ (self, session: Session):
         self.session = session
@@ -9,7 +13,11 @@ class RoomTypeRepository:
         dict_room_type = room_type_data.model_dump()
         room_type = RoomType.model_validate(dict_room_type)
         self.session.add(room_type)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+            raise AlreadyExistsRoomTypeName(room_type_data.name)
         self.session.refresh(room_type)
         return room_type
     
@@ -27,7 +35,11 @@ class RoomTypeRepository:
         room_type_db.sqlmodel_update(room_type_data)
 
         self.session.add(room_type_db)
-        self.session.commit()
+        try:
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+            raise AlreadyExistsRoomTypeName(room_type_data.name)
         self.session.refresh(room_type_db)
         return room_type_db
 

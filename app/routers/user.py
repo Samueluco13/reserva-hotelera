@@ -1,13 +1,12 @@
-from fastapi import APIRouter, status, Depends
+from fastapi import APIRouter, status
 from pydantic import EmailStr
 
-from app.utils.db import session
 from ..models.user import User, UserCreate, UserUpdate
 
 from app.service.user import create_u, get_all_u, get_u_by_email, get_u_by_id, update_u, delete_u
 
 from app.utils.dependencies import user_repo
-from app.repositories.user import UserRepository
+
 
 router = APIRouter(prefix="/users", tags=["users"])
 
