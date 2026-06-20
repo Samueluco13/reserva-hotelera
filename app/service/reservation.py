@@ -13,6 +13,7 @@ from app.models.notification import NotificationCreate
 
 from app.exceptions.not_found_exception import NotFoundReservation
 from app.exceptions.date_range_exception import InvalidDateRangeOrder, UnavailableDateRange
+from app.exceptions.same_status_exception import SameStatusReservation
 
 from app.service.user import get_u_by_id, get_u_by_email
 from app.service.room import get_r_by_number
@@ -144,6 +145,8 @@ def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_r
     reservation = reservation_repo.get_by_id(reservation_id)
     if not reservation:
         raise NotFoundReservation(reservation_id)
+    if reservation.status.value == new_status.value:
+        raise SameStatusReservation(reservation_id, new_status.value)
     match new_status:
         case StatusEnum.cancelled:
             subject = "Sobre su reserva"
