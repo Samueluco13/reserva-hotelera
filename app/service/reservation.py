@@ -1,8 +1,5 @@
 from app.config import get_settings
 
-from app.models.user import User
-from app.models.room import Room
-
 from app.service.google_calendar import create_event, delete_event, get_upcoming_events, update_event
 from app.service.notification import create_noti
 
@@ -15,8 +12,11 @@ from app.models.reservation import ReservationCreate, ReservationUpdate, StatusE
 from app.models.notification import NotificationCreate
 
 from app.exceptions.not_found_exception import NotFoundReservation
+from app.exceptions.date_range_exception import InvalidDateRangeOrder, UnavailableDateRange
 
-from app.service.user import get_u_by_id
+from app.service.user import get_u_by_id, get_u_by_email
+from app.service.room import get_r_by_number
+from app.service.notification import create_noti
 from app.utils.formats import date_format_string
 
 settings = get_settings()
@@ -24,10 +24,21 @@ settings = get_settings()
 email_user = settings.EMAIL_USER
 
 """Funcion que ayuda a crear una reserva, se utiliza en la creacion por parte de staff y por parte del mismo usuario"""
+def _validate_date_range_helper(room_number: int, checkin, checkout, repo: ReservationRepository):
+    if checkin >= checkout:
+        raise InvalidDateRangeOrder()
+
+    reservations_list = repo.get_all_available_by_room(room_number)
+    if not reservations_list:
+        return
+    for res in reservations_list:
+        if checkin < res.checkout_date and checkout > res.checkin_date:
+            raise UnavailableDateRange()
+
 def _creation_helper(reservation_data, user_id, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
-    room = room_repo.get_by_number(reservation_data.room_number)
-    if not room:
-        not_found_error(Room, "room")
+    room = get_r_by_number(reservation_data.room_number, room_repo)
+    
+    _validate_date_range_helper(room.number, reservation_data.checkin_date, reservation_data.checkout_date, reservation_repo)
 
     reservation_info = ReservationCreate(
         checkin_date = reservation_data.checkin_date,
@@ -70,9 +81,7 @@ def create_reservation_user(reservation_data, room_repo: RoomRepository, reserva
     return reservation
 
 def create_reservation_staff(reservation_data, user_repo: UserRepository, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository):
-    user = user_repo.get_by_email(reservation_data.user_email)
-    if not user:
-        not_found_error(User, "user")
+    user = get_u_by_email(reservation_data.user_email, user_repo)
     reservation = _creation_helper(reservation_data, user.id, room_repo, reservation_repo, notification_repo, user_repo)
     return reservation
 
@@ -179,5 +188,5 @@ def delete_res(reservation_id: int, reservation_repo: ReservationRepository, not
 
     reservation_repo.delete(reservation_to_delete)
     delete_event(event_to_delete["id"])
-    notification_repo.create(notification_data)
+    create_noti(notification_data, notification_repo)
     return {"message": "Reservation deleted successfully"}

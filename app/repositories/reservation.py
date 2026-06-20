@@ -1,5 +1,5 @@
 from sqlmodel import Session, select
-from app.models.reservation import Reservation, ReservationCreate, ReservationUpdate
+from app.models.reservation import Reservation, ReservationCreate, ReservationUpdate, StatusEnum
 
 class ReservationRepository:
     def __init__(self, session: Session):
@@ -18,6 +18,12 @@ class ReservationRepository:
     
     def get_all(self) -> list[Reservation]:
         return self.session.exec(select(Reservation)).all()
+    
+    def get_all_available_by_room(self, room_number: int) -> list[Reservation]:
+        return self.session.exec(select(Reservation).where(
+            Reservation.room_number == room_number,
+            Reservation.status != StatusEnum.cancelled
+            )).all()
     
     def update(self, reservation_db: Reservation, reservation_data: ReservationUpdate) -> Reservation | None:
         reservation_data_dict = reservation_data.model_dump(exclude_unset=True)
