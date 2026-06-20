@@ -97,8 +97,9 @@ def get_all_res(repo: ReservationRepository):
     return reservations
 
 def update_res(reservation_id: int, reservation_data, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
+    get_u_by_id(reservation_data.user_id, user_repo)
     reservation_db = reservation_repo.get_by_id(reservation_id)
-    if not reservation:
+    if not reservation_db:
         raise NotFoundReservation(reservation_id)
     
     reservation = reservation_repo.update(reservation_db, reservation_data)

@@ -13,6 +13,7 @@ class RoomRepository:
         room_dict = room_data.model_dump()
         room = Room.model_validate(room_dict)
         self.session.add(room)
+        # self.session.commit()
         try:
             self.session.commit()
         except IntegrityError:

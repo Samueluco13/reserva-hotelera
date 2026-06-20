@@ -2,15 +2,15 @@ from fastapi import APIRouter, status
 
 from ..models.room import Room, RoomCreate, RoomUpdate
 
-from app.utils.dependencies import room_repo
+from app.utils.dependencies import room_repo, room_type_repo
 
 from app.service.room import create_r, get_r_by_number, get_all_r, update_r, delete_r
 
 router = APIRouter(prefix="/rooms", tags=["rooms"])
 
 @router.post("", response_model=Room, status_code=status.HTTP_201_CREATED)
-async def create_room(room_data:  RoomCreate, repo: room_repo):
-    return create_r(room_data, repo)
+async def create_room(room_data:  RoomCreate, room_repo: room_repo, room_type_repo: room_type_repo):
+    return create_r(room_data, room_repo, room_type_repo)
 
 @router.get("/{room_number}", response_model=Room, status_code=status.HTTP_200_OK)
 async def get_room_by_number(room_number: int, repo: room_repo):
@@ -21,8 +21,8 @@ async def get_all_rooms(repo: room_repo):
     return get_all_r(repo)
 
 @router.patch("/{room_number}", response_model = Room, status_code=status.HTTP_200_OK)
-async def update_room_by_id(room_number: int, room_data: RoomUpdate , repo: room_repo):
-    return update_r(room_number, room_data, repo)
+async def update_room_by_id(room_number: int, room_data: RoomUpdate , room_repo: room_repo, room_type_repo: room_type_repo):
+    return update_r(room_number, room_data, room_repo, room_type_repo)
 
 @router.delete("/{room_number}", status_code=status.HTTP_200_OK)
 async def delete_room_by_id(room_number: int, repo: room_repo):

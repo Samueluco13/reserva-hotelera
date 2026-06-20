@@ -4,10 +4,12 @@ from app.repositories.user import UserRepository
 
 from app.exceptions.not_found_exception import NotFoundNotification
 
+from app.service.user import get_u_by_id
+
 from app.utils.email_sending import send_email
 
 def create_noti(notification_data: NotificationCreate, repo: NotificationRepository, user_repo: UserRepository, subject: str):
-    user = user_repo.get_by_id(notification_data.user_id)
+    user = get_u_by_id(notification_data.user_id, user_repo)
 
     notification = repo.create(notification_data)
     send_email(subject, notification_data.content, user.email)
