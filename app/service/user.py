@@ -1,9 +1,17 @@
+from app.models.user import User
+
 from app.repositories.user import UserRepository
 
 from app.exceptions.not_found_exception import NotFoundUserById, NotFoundUserByEmail
 
+from app.utils.hash_password import hash_password
+
 def create_u(user_data, repo: UserRepository):
-    user = repo.create(user_data)
+    user_hashed = User(
+        **user_data.model_dump(exclude={"password"}),
+        password=hash_password(user_data.password)
+    )
+    user = repo.create(user_hashed)
     return user
 
 def get_u_by_id(user_id: int, repo: UserRepository):
