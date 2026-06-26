@@ -2,9 +2,10 @@ from fastapi import APIRouter, status
 
 from ..models.notification import Notification, NotificationCreate
 
-from api.utils.db.dependencies import notification_repo
-
 from api.service.notification import create_noti, get_noti_by_id, get_all_noti, delete_noti
+
+from api.utils.db.dependencies import notification_repo
+from api.utils.security.dependencies import company_user
 
 router = APIRouter(prefix="/notifications", tags=["notifications"])
 
@@ -13,13 +14,13 @@ async def create_notification(notification_data: NotificationCreate, repo: notif
     return create_noti(notification_data, repo)
 
 @router.get("/{notification_id}", response_model=Notification, status_code=status.HTTP_200_OK)
-async def get_notification_by_id(notification_id: int, repo: notification_repo):
+async def get_notification_by_id(notification_id: int, repo: notification_repo, _: company_user):
     return get_noti_by_id(notification_id, repo)
 
 @router.get("", response_model = list[Notification], status_code=status.HTTP_200_OK)
-async def get_all_notifications(repo: notification_repo):
+async def get_all_notifications(repo: notification_repo, _: company_user):
     return get_all_noti(repo)
 
 @router.delete("/{notification_id}", status_code=status.HTTP_200_OK)
-async def delete_notification_by_id(notification_id: int, repo: notification_repo):
+async def delete_notification_by_id(notification_id: int, repo: notification_repo, _: company_user):
     return delete_noti(notification_id, repo)

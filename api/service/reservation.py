@@ -77,7 +77,7 @@ def _searching_helper(reservation_db):
         found_event = event
     return found_event
 
-def create_reservation_user(reservation_data, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
+def create_reservation_guest(reservation_data, room_repo: RoomRepository, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
     reservation = _creation_helper(reservation_data, reservation_data.user_id, room_repo, reservation_repo, notification_repo, user_repo)
     return reservation
 
