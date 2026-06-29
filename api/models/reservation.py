@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 
+from pydantic import EmailStr
 from sqlmodel import SQLModel, Field, Relationship
 
 """Modelo para las opciones del ENUM del estado de la reserva"""
@@ -33,9 +34,13 @@ class ReservationCreateStaff(SQLModel):
 class ReservationUpdate(SQLModel):
     checkin_date: datetime | None = None
     checkout_date: datetime | None = None
-    status: StatusEnum | None = None
     room_number: int | None = None
-    user_id: int | None = None
+
+class ReservationUpdateStatus(SQLModel):
+    status: StatusEnum
+
+class ReservationUpdateHolder(SQLModel):
+    new_email: EmailStr
 
 class Reservation(ReservationBase, table = True):
     __tablename__ = "reservation"

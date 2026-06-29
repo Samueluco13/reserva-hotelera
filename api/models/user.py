@@ -24,12 +24,14 @@ class UserCreate(UserBase):
 Modelo para actualizar los datos del usuario.
 Se definen los atributos como opcionales para que no genere errores a la hora de solo cambiar un dato
 """
-class UserUpdate(UserBase):
+class UserUpdate(SQLModel):
     first_name: str | None = None
     last_name: str | None = None
-    email: EmailStr | None = None
-    password: str | None = None
-    role: RoleEnum | None = None
+    phone_number: str | None = None
+
+class UserUpdatePassword(SQLModel):
+    password: str
+
 
 class User(UserBase, table = True):
     __tablename__ = "user"

@@ -18,6 +18,8 @@ def get_current_user(token: str = Depends(oauth2_scheme)) -> dict:
         raise InvalidToken()
     return payload
 
+session_user = Annotated[dict, Depends(get_current_user)]
+
 def require_role(*allowed: RoleEnum):
     """Devuelve una dependencia que valida JWT + rol."""
     allowed_values = {r.value for r in allowed}

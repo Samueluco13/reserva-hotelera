@@ -74,10 +74,12 @@ def get_upcoming_events():
     else:
         print([{"Evento": event["summary"],
                 "Check In": event["start"].get("dateTime"),
-                "Check Out": event["end"].get("dateTime")} for event in events_list])
+                "Check Out": event["end"].get("dateTime"),
+                "Attendees": event["attendees"]} ##PRUEBA PARA SABER COMO SE MUESTRAN LOS ATTENDEES
+                for event in events_list])
         return events_list
     
-def update_event(event_id, summary=None, start_time=None, end_time=None):
+def update_event(event_id, summary=None, start_time=None, end_time=None, attendee=None):
     calendar_service = _authenticate()
     event = calendar_service.events().get(calendarId="primary", eventId=event_id).execute()
 
@@ -89,6 +91,9 @@ def update_event(event_id, summary=None, start_time=None, end_time=None):
 
     if end_time:
         event['end']['dateTime'] = end_time.strftime('%Y-%m-%dT%H:%M:%S')
+
+    if attendee:
+        event["attendees"][0]["email"] = attendee
 
     updated_event = calendar_service.events().update(
         calendarId = "primary",

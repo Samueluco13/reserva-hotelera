@@ -18,7 +18,10 @@ class NotificationRepository:
     
     def get_all(self) -> list[Notification]:
         return self.session.exec(select(Notification)).all()
-    
+
+    def get_all_by_user(self, user_id: int) -> list[Notification]:
+        return self.session.exec(select(Notification).where(Notification.user_id == user_id)).all()
+
     def delete(self, notification_to_delete: Notification) -> bool:
         self.session.delete(notification_to_delete)
         self.session.commit()

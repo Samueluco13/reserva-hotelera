@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import user, reservation, room, room_type, notification, auth
 
@@ -10,6 +11,15 @@ from .exceptions.token_exception import UnauthorizedBase, unauthorized_handler
 from .exceptions.role_exception import RoleExceptionBase, role_exception_handler
 
 app = FastAPI()
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(user.router)
 app.include_router(reservation.router)
 app.include_router(room.router)

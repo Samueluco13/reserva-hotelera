@@ -7,7 +7,7 @@ from api.service.user import create_u, get_all_u, get_u_by_email, get_u_by_id, u
 
 from api.utils.db.dependencies import user_repo
 
-from api.utils.security.dependencies import admin_user, company_user
+from api.utils.security.dependencies import admin_user, company_user, session_user
 
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -28,15 +28,24 @@ async def get_user_by_email(user_email: EmailStr, repo: user_repo, _: company_us
     return get_u_by_email(user_email, repo)
 
 
+@router.get("/me", response_model=User, status_code=status.HTTP_200_OK)
+async def get_me(repo: user_repo, payload: session_user):
+    return get_u_by_id(payload["id"], repo)
+
+
+@router.patch("", response_model=User, status_code=status.HTTP_200_OK)
+async def update_me(user_data: UserUpdate, repo: user_repo, payload: session_user):
+    return update_u(payload["id"], user_data, repo)
+
+
 @router.get("/{user_id}", response_model=User, status_code=status.HTTP_200_OK)
 async def get_user_by_id(user_id: int, repo: user_repo, _: company_user):
     return get_u_by_id(user_id, repo)
 
 
 @router.patch("/{user_id}", response_model=User, status_code=status.HTTP_200_OK)
-async def update_user(user_id: int, user_data: UserUpdate, repo: user_repo):
+async def update_user(user_id: int, user_data: UserUpdate, repo: user_repo, _: company_user):
     return update_u(user_id, user_data, repo)
-
 
 
 @router.delete("/{user_id}", status_code=status.HTTP_200_OK)

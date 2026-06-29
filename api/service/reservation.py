@@ -1,15 +1,14 @@
+from pydantic import EmailStr
+
 from api.config import get_settings
 
-from api.service.google_calendar import create_event, delete_event, get_upcoming_events, update_event
-from api.service.notification import create_noti
+from api.models.reservation import ReservationCreate, ReservationUpdate, ReservationUpdateHolder, ReservationUpdateStatus, StatusEnum
+from api.models.notification import NotificationCreate
 
 from api.repositories.user import UserRepository
 from api.repositories.room import RoomRepository
 from api.repositories.reservation import ReservationRepository
 from api.repositories.notification import NotificationRepository
-
-from api.models.reservation import ReservationCreate, ReservationUpdate, StatusEnum
-from api.models.notification import NotificationCreate
 
 from api.exceptions.not_found_exception import NotFoundReservation
 from api.exceptions.date_range_exception import InvalidDateRangeOrder, UnavailableDateRange
@@ -18,7 +17,10 @@ from api.exceptions.same_status_exception import SameStatusReservation
 from api.service.user import get_u_by_id, get_u_by_email
 from api.service.room import get_r_by_number
 from api.service.notification import create_noti
+from api.service.google_calendar import create_event, delete_event, get_upcoming_events, update_event
+
 from api.utils.formats.dates import date_format_string
+
 
 settings = get_settings()
 
@@ -97,7 +99,10 @@ def get_all_res(repo: ReservationRepository):
     get_upcoming_events()
     return reservations
 
-def update_res(reservation_id: int, reservation_data, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
+def get_all_res_by_user(user_id: int, repo: ReservationRepository):
+    return repo.get_all_by_user(user_id)
+
+def update_res(reservation_id: int, reservation_data: ReservationUpdate, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
     get_u_by_id(reservation_data.user_id, user_repo)
     reservation_db = reservation_repo.get_by_id(reservation_id)
     if not reservation_db:
@@ -142,10 +147,10 @@ def update_res(reservation_id: int, reservation_data, reservation_repo: Reservat
     return reservation
 
 def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
-    reservation = reservation_repo.get_by_id(reservation_id)
-    if not reservation:
+    reservation_db = reservation_repo.get_by_id(reservation_id)
+    if not reservation_db:
         raise NotFoundReservation(reservation_id)
-    if reservation.status.value == new_status.value:
+    if reservation_db.status.value == new_status.value:
         raise SameStatusReservation(reservation_id, new_status.value)
     match new_status:
         case StatusEnum.cancelled:
@@ -160,12 +165,12 @@ def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_r
                 Tu reserva ha finalizado. Esperamos que hayas disfrutado tu estancia y que hayas tenido una excelente experiencia con nosotros.
                 ¡Esperamos recibirte nuevamente muy pronto!
             """
-    event_to_delete = _searching_helper(reservation)
+    event_to_delete = _searching_helper(reservation_db)
     delete_event(event_to_delete["id"])
-    reservation_data = ReservationUpdate(
+    reservation_data = ReservationUpdateStatus(
         status=new_status
     )
-    reservation_repo.update(reservation, reservation_data)
+    reservation = reservation_repo.update_status(reservation_db, reservation_data)
 
     notification_data = NotificationCreate(
         content = message,
@@ -173,6 +178,43 @@ def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_r
     )
 
     create_noti(notification_data, notification_repo, user_repo, subject)
+    return reservation
+
+def update_res_holder(reservation_id: int, new_email: EmailStr, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
+    reservation_db = reservation_repo.get_by_id(reservation_id)
+    if not reservation_db:
+        raise NotFoundReservation(reservation_id)
+    
+    old_holder = get_u_by_id(reservation_db.user_id, user_repo)
+    new_holder = get_u_by_email(new_email, user_repo)
+
+    reservation = reservation_repo.update_holder(reservation_db, new_holder.id)
+
+    checkin_string = date_format_string(reservation.checkin_date)
+    checkout_string = date_format_string(reservation.checkout_date)
+    
+    old_holder_notification = NotificationCreate(
+        content = "Tu reserva ha cambiado de titular. Gracias por haber contado con nosotros",
+        user_id = old_holder.id
+    )
+    create_noti(old_holder_notification, notification_repo, user_repo, "NUEVO TITULAR")
+    
+    new_holder_notification = NotificationCreate(
+        content = f"""\
+            Eres el nuevo tiutlar de una reserva, esta es tu información
+            Tu fecha y hora del check-in: {checkin_string}
+            Tu fecha y hora del check-out: {checkout_string}
+            Tu habitación: {reservation_db.room_number}
+            Estado de tu reserva: {reservation_db.status.value}
+            """,
+        user_id = new_holder.id
+    )
+    create_noti(new_holder_notification, notification_repo, user_repo, "NUEVO TITULAR")
+
+    event_to_update = _searching_helper(reservation_db)
+
+    update_event(event_to_update["id"], attendee = new_email)
+
     return reservation
 
 def delete_res(reservation_id: int, reservation_repo: ReservationRepository, notification_repo: NotificationRepository):

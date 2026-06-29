@@ -25,6 +25,10 @@ def get_all_noti(repo: NotificationRepository):
     notifications = repo.get_all()
     return notifications
 
+def get_all_noti_by_user(user_id: int, repo: NotificationRepository):
+    """Lista las notificaciones de un usuario específico."""
+    return repo.get_all_by_user(user_id)
+
 def delete_noti(notification_id: int, repo: NotificationRepository):
     notification_to_delete = repo.get_by_id(notification_id)
     if not notification_to_delete:
