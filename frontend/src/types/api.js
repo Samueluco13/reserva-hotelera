@@ -4,6 +4,7 @@
 /**
  * @typedef {'guest' | 'staff' | 'admin'} Role
  * @typedef {'available' | 'reserved' | 'occupied'} RoomStatus
+ * @typedef {'active' | 'cancelled' | 'completed'} ReservationStatus
  *
  * @typedef {Object} User
  * @property {number} id
@@ -34,6 +35,28 @@
  * @property {number} id
  * @property {string} name
  * @property {number} price
+ *
+ * @typedef {Object} Reservation
+ * @property {number} id
+ * @property {string} created_at
+ * @property {string | null} last_edit
+ * @property {string | null} checkin_date
+ * @property {string | null} checkout_date
+ * @property {ReservationStatus} status
+ * @property {number} room_number
+ * @property {number} user_id
+ *
+ * @typedef {Object} ReservationCreate
+ * @property {number} room_number
+ * @property {string | null} [checkin_date]
+ * @property {string | null} [checkout_date]
+ * @property {number} user_id
+ *
+ * @typedef {Object} ReservationCreateStaff
+ * @property {number} room_number
+ * @property {string} user_email
+ * @property {string | null} [checkin_date]
+ * @property {string | null} [checkout_date]
  */
 
 export {};

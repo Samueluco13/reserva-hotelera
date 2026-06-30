@@ -3,9 +3,13 @@ import { Link, NavLink } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { ConfirmDialog } from '@/components/ConfirmDialog';
 
+const STAFF_ROLES = ['staff', 'admin'];
+
 export function Navbar() {
   const { user, isAuthenticated, logout } = useAuth();
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
+
+  const isStaff = !!user && STAFF_ROLES.includes(user.role);
 
   return (
     <>
@@ -28,6 +32,32 @@ export function Navbar() {
             >
               Inicio
             </NavLink>
+
+            {isAuthenticated && (
+              <NavLink
+                to="/my-reservations"
+                className={({ isActive }) =>
+                  `rounded-md px-3 py-1.5 transition ${
+                    isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-blue-700'
+                  }`
+                }
+              >
+                Mis reservas
+              </NavLink>
+            )}
+
+            {isStaff && (
+              <NavLink
+                to="/reservations"
+                className={({ isActive }) =>
+                  `rounded-md px-3 py-1.5 transition ${
+                    isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-blue-700'
+                  }`
+                }
+              >
+                Reservas
+              </NavLink>
+            )}
 
             {isAuthenticated && user ? (
               <>

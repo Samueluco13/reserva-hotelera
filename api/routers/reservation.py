@@ -17,6 +17,10 @@ async def create_resservation_by_guest(reservation_data: ReservationCreate, room
 async def create_resservation_by_staff(reservation_data: ReservationCreateStaff, user_repo: user_repo, room_repo: room_repo, reservation_repo: reservation_repo, noti_repo: notification_repo, _: company_user):
     return create_reservation_staff(reservation_data, user_repo, room_repo, reservation_repo, noti_repo)
 
+@router.get("/me", response_model=list[Reservation], status_code=status.HTTP_200_OK)
+async def get_my_reservations(repo: reservation_repo, payload: session_user):
+    return get_all_res_by_user(payload["id"], repo)
+
 @router.get("/{reservation_id}", response_model=Reservation)
 async def get_reservation_by_id(reservation_id: int, repo: reservation_repo):
     return get_res_by_id(reservation_id, repo)
@@ -24,10 +28,6 @@ async def get_reservation_by_id(reservation_id: int, repo: reservation_repo):
 @router.get("", response_model= list[Reservation])
 async def get_all_reservations(repo: reservation_repo, _: company_user):
     return get_all_res(repo)
-
-@router.get("/me", response_model=list[Reservation], status_code=status.HTTP_200_OK)
-async def get_my_reservations(repo: reservation_repo, payload: session_user):
-    return get_all_res_by_user(payload["id"], repo)
 
 @router.patch("/{reservation_id}", response_model = Reservation, status_code=status.HTTP_200_OK)
 async def update_reservation(reservation_id: int, reservation_data: ReservationUpdate, res_repo: reservation_repo, noti_repo: notification_repo, user_repo: user_repo):
