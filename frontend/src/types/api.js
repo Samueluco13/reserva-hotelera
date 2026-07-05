@@ -36,6 +36,13 @@
  * @property {string} name
  * @property {number} price
  *
+ * @typedef {Object} RoomTypeCreate
+ * @property {string} name
+ * @property {number} price
+ *
+ * @typedef {Object} RoomTypeUpdate
+ * @property {number} [price]
+ *
  * @typedef {Object} Reservation
  * @property {number} id
  * @property {string} created_at

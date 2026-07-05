@@ -31,7 +31,7 @@ function formatDate(value) {
 
 function ReservationCard({ reservation, roomType, onEdit, onRequestCancel }) {
   const status = STATUS_STYLES[reservation.status] ?? STATUS_STYLES.active;
-  const canCancel = reservation.status !== 'cancelled';
+  const canModify = reservation.status === "active";
 
   return (
     <article className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -62,14 +62,15 @@ function ReservationCard({ reservation, roomType, onEdit, onRequestCancel }) {
       </div>
 
       <footer className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
-        <button
-          type="button"
-          onClick={onEdit}
-          className="rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
-        >
-          Editar
-        </button>
-        {canCancel && (
+      {canModify && (
+        <>
+          <button
+            type="button"
+            onClick={onEdit}
+            className="rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+          >
+            Editar
+          </button>
           <button
             type="button"
             onClick={onRequestCancel}
@@ -77,6 +78,7 @@ function ReservationCard({ reservation, roomType, onEdit, onRequestCancel }) {
           >
             Cancelar reserva
           </button>
+        </>
         )}
       </footer>
     </article>
