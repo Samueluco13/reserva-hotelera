@@ -1,7 +1,7 @@
 from api.utils.db.dependencies import room_repo
 
 from api.exceptions.not_found_exception import NotFoundRoom
-from api.exceptions.same_status_exception import SameStatusRoom
+from api.exceptions.status_exception import SameStatusRoom
 
 from api.repositories.room_type import RoomTypeRepository
 

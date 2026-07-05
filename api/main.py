@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import user, reservation, room, room_type, notification, auth
@@ -6,7 +6,7 @@ from .routers import user, reservation, room, room_type, notification, auth
 from .exceptions.not_found_exception import NotFoundBase, not_found_handler
 from .exceptions.already_exists_exception import AlreadyExistsBase, already_exists_handler
 from .exceptions.date_range_exception import DateRangeBase, date_range_handler
-from .exceptions.same_status_exception import SameStatusBase, same_status_helper
+from .exceptions.status_exception import StatusBase, status_exception_helper
 from .exceptions.token_exception import UnauthorizedBase, unauthorized_handler
 from .exceptions.role_exception import RoleExceptionBase, role_exception_handler
 
@@ -30,6 +30,17 @@ app.include_router(auth.router)
 app.add_exception_handler(NotFoundBase, not_found_handler)
 app.add_exception_handler(AlreadyExistsBase, already_exists_handler)
 app.add_exception_handler(DateRangeBase, date_range_handler)
-app.add_exception_handler(SameStatusBase, same_status_helper)
+app.add_exception_handler(StatusBase, status_exception_helper)
 app.add_exception_handler(UnauthorizedBase, unauthorized_handler)
 app.add_exception_handler(RoleExceptionBase, role_exception_handler)
+
+EXCLUDED_PATHS = ["/rooms", "/rooms/{room_number}", "/room_types", "/auth/login", "/auth/register", "/docs", "/openapi.json"]
+@app.middleware("http")
+async def jwt_authentication_middleware(request: Request, call_next):
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    if request.url.path not in EXCLUDED_PATHS:
+        authorization = request.headers.get("authorization")
+        if authorization is None or not authorization.startswith("Bearer "):
+            raise UnauthorizedBase("Missing token")
+    return await call_next(request)

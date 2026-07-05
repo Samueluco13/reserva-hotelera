@@ -34,7 +34,7 @@ async def update_reservation(reservation_id: int, reservation_data: ReservationU
     return update_res(reservation_id, reservation_data, res_repo, noti_repo, user_repo)
 
 @router.patch("/{reservation_id}/status", response_model=Reservation, status_code=status.HTTP_200_OK)
-async def update_reservation_status(reservation_id: int, data_status: ReservationUpdateStatus, res_repo: reservation_repo, noti_repo: notification_repo, user_repo: user_repo, _: company_user):
+async def update_reservation_status(reservation_id: int, data_status: ReservationUpdateStatus, res_repo: reservation_repo, noti_repo: notification_repo, user_repo: user_repo):
     return update_res_status(reservation_id, data_status.status, res_repo, noti_repo, user_repo)
 
 @router.patch("/{reservation_id}/holder", response_model=Reservation, status_code=status.HTTP_200_OK)

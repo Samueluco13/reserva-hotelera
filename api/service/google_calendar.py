@@ -58,27 +58,36 @@ def create_event(summary: int, start_time: datetime, end_time: datetime, timezon
 
 def get_upcoming_events():
     now = datetime.datetime.now().isoformat() + "Z"
-    next_week = (datetime.datetime.now() + datetime.timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=0).isoformat() + "Z"
+    # Para cuando se requiera obtener los eventos en los proximos 7 dias
+    # next_week = (datetime.datetime.now() + datetime.timedelta(days=6)).replace(hour=23, minute=59, second=59, microsecond=0).isoformat() + "Z"
 
-    calendar_service = _authenticate()
-    events = calendar_service.events().list(
-        calendarId="primary",
-        timeMin = now,
-        timeMax = next_week,
-        singleEvents=True,
-        orderBy='startTime'
-    ).execute()
-    events_list = events.get("items", [])
-    if not events_list:
-        print("There is no upcoming events in 7 days")
+    all_events = []
+    page_token = None
+    while True:
+        calendar_service = _authenticate()
+        events = calendar_service.events().list(
+            calendarId="primary",
+            timeMin = now,
+            singleEvents=True,
+            orderBy='startTime',
+            pageToken = page_token
+        ).execute()
+        all_events.extend(events.get("items", []))
+        page_token = events.get("nextPageToken")
+
+        if not page_token:
+            break
+    
+    if not all_events:
+        print("There is no upcoming events")
     else:
         print([{"Evento": event["summary"],
                 "Check In": event["start"].get("dateTime"),
                 "Check Out": event["end"].get("dateTime"),
                 "Attendees": event["attendees"]} ##PRUEBA PARA SABER COMO SE MUESTRAN LOS ATTENDEES
-                for event in events_list])
-        return events_list
-    
+                for event in all_events])
+        return all_events
+
 def update_event(event_id, summary=None, start_time=None, end_time=None, attendee=None):
     calendar_service = _authenticate()
     event = calendar_service.events().get(calendarId="primary", eventId=event_id).execute()

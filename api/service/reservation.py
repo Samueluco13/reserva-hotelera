@@ -12,7 +12,7 @@ from api.repositories.notification import NotificationRepository
 
 from api.exceptions.not_found_exception import NotFoundReservation
 from api.exceptions.date_range_exception import InvalidDateRangeOrder, UnavailableDateRange
-from api.exceptions.same_status_exception import SameStatusReservation
+from api.exceptions.status_exception import SameStatusReservation, InmutableStatusReservation
 
 from api.service.user import get_u_by_id, get_u_by_email
 from api.service.room import get_r_by_number
@@ -72,7 +72,7 @@ def _creation_helper(reservation_data, user_id, room_repo: RoomRepository, reser
 
 def _searching_helper(reservation_db):
     next_events = get_upcoming_events()
-
+    print(next_events)
     for event in next_events:
         if event["summary"] == f"Reservation room {reservation_db.room_number}" and event["start"] == reservation_db.checkin_date:
             break
@@ -103,7 +103,6 @@ def get_all_res_by_user(user_id: int, repo: ReservationRepository):
     return repo.get_all_by_user(user_id)
 
 def update_res(reservation_id: int, reservation_data: ReservationUpdate, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
-    get_u_by_id(reservation_data.user_id, user_repo)
     reservation_db = reservation_repo.get_by_id(reservation_id)
     if not reservation_db:
         raise NotFoundReservation(reservation_id)
@@ -147,6 +146,8 @@ def update_res(reservation_id: int, reservation_data: ReservationUpdate, reserva
     return reservation
 
 def update_res_status(reservation_id: int, new_status: StatusEnum, reservation_repo: ReservationRepository, notification_repo: NotificationRepository, user_repo: UserRepository):
+    if new_status is StatusEnum.completed:
+        raise InmutableStatusReservation(new_status.value)
     reservation_db = reservation_repo.get_by_id(reservation_id)
     if not reservation_db:
         raise NotFoundReservation(reservation_id)

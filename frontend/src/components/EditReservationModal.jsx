@@ -1,56 +1,57 @@
 import { useEffect, useRef, useState } from 'react';
 import { Spinner } from '@/components/Spinner';
-import {
-  createReservationGuest,
-  createReservationStaff,
-} from '@/services/reservations';
-import { useAuth } from '@/context/AuthContext';
-import { EMAIL_REGEX, getErrorMessage } from '@/lib/errors';
+import { updateReservationDates } from '@/services/reservations';
+import { getErrorMessage } from '@/lib/errors';
 
 /**
- * Modal reutilizable para crear reservas en sus dos variantes:
- * - `mode='guest'`  → usa el `user_id` del contexto de autenticación.
- * - `mode='staff'`  → pide el `user_email` del huésped (sólo staff/admin).
- *
- * El padre provee las habitaciones y tipos para evitar dobles fetch.
+ * Convierte una fecha ISO del backend a `YYYY-MM-DDTHH:mm` para
+ * `datetime-local`. Devuelve cadena vacía si el valor es inválido.
+ * @param {string | null | undefined} iso
+ * @returns {string}
+ */
+function isoToLocalInput(iso) {
+  if (!iso) return '';
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return '';
+  // slice hasta los minutos (formato `datetime-local`).
+  return date.toISOString().slice(0, 16);
+}
+
+/**
+ * Modal para editar fechas y habitación de una reserva existente.
+ * Reusa el `user_id` actual porque el backend lo exige en el PATCH.
  *
  * @param {Object} props
  * @param {boolean} props.open
  * @param {() => void} props.onClose
- * @param {(reservation: import('@/types/api').Reservation) => void} [props.onCreated]
- * @param {'guest' | 'staff'} props.mode
+ * @param {(reservation: import('@/types/api').Reservation) => void} [props.onUpdated]
+ * @param {import('@/types/api').Reservation | null} props.reservation
  * @param {import('@/types/api').Room[]} props.rooms
  * @param {import('@/types/api').RoomType[]} props.roomTypes
- * @param {number} [props.defaultRoomNumber]
  */
-export function ReservationFormModal({
+export function EditReservationModal({
   open,
   onClose,
-  onCreated,
-  mode = 'guest',
+  onUpdated,
+  reservation,
   rooms,
   roomTypes,
-  defaultRoomNumber,
 }) {
-  const { user } = useAuth();
-
-  const initialForm = {
-    room_number: defaultRoomNumber ?? '',
+  const [form, setForm] = useState({
+    room_number: '',
     checkin_date: '',
     checkout_date: '',
-    user_email: '',
-  };
-  const [form, setForm] = useState(initialForm);
+  });
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
   const firstFieldRef = useRef(null);
 
-  // Reset al abrir/cerrar y enfocar el primer campo al abrir.
+  // Reset / prefill al cambiar la reserva objetivo o abrir el modal.
   useEffect(() => {
     if (!open) {
-      setForm({ ...initialForm, room_number: defaultRoomNumber ?? '' });
+      setForm({ room_number: '', checkin_date: '', checkout_date: '' });
       setErrors({});
       setSubmitError(null);
       setSubmitting(false);
@@ -58,7 +59,15 @@ export function ReservationFormModal({
       return undefined;
     }
 
-    setForm({ ...initialForm, room_number: defaultRoomNumber ?? '' });
+    if (reservation) {
+      setForm({
+        room_number: reservation.room_number ?? '',
+        checkin_date: isoToLocalInput(reservation.checkin_date),
+        checkout_date: isoToLocalInput(reservation.checkout_date),
+      });
+    } else {
+      setForm({ room_number: '', checkin_date: '', checkout_date: '' });
+    }
     setErrors({});
     setSubmitError(null);
     setSubmitting(false);
@@ -78,10 +87,9 @@ export function ReservationFormModal({
       document.removeEventListener('keydown', onKeyDown);
       document.body.style.overflow = previousOverflow;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, defaultRoomNumber]);
+  }, [open, reservation, onClose]);
 
-  if (!open) return null;
+  if (!open || !reservation) return null;
 
   function update(key, value) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -101,10 +109,6 @@ export function ReservationFormModal({
         next.checkout_date = 'El check-out debe ser posterior al check-in.';
       }
     }
-    if (mode === 'staff') {
-      if (!form.user_email.trim()) next.user_email = 'El email del huésped es obligatorio.';
-      else if (!EMAIL_REGEX.test(form.user_email.trim())) next.user_email = 'Email no válido.';
-    }
     return next;
   }
 
@@ -117,56 +121,36 @@ export function ReservationFormModal({
     setSubmitError(null);
     setSubmitting(true);
 
-    const checkinISO = form.checkin_date;
-    const checkoutISO = form.checkout_date;
-    const roomNumber = Number(form.room_number);
-
     try {
-      let created;
-      if (mode === 'staff') {
-        created = await createReservationStaff({
-          room_number: roomNumber,
-          user_email: form.user_email.trim(),
-          checkin_date: checkinISO,
-          checkout_date: checkoutISO,
-        });
-      } else {
-        if (!user?.id) {
-          throw new Error('No se pudo identificar al usuario en sesión.');
-        }
-        created = await createReservationGuest({
-          room_number: roomNumber,
-          user_id: user.id,
-          checkin_date: checkinISO,
-          checkout_date: checkoutISO,
-        });
-      }
+      const updated = await updateReservationDates(reservation.id, {
+        room_number: Number(form.room_number),
+        checkin_date: form.checkin_date,
+        checkout_date: form.checkout_date,
+        // El backend exige el titular actual.
+        user_id: reservation.user_id,
+      });
 
       setSuccess(true);
-      onCreated?.(created);
+      onUpdated?.(updated);
 
-      // Breve confirmación antes de cerrar.
       setTimeout(() => {
         onClose();
       }, 900);
     } catch (err) {
       setSubmitError(
-        getErrorMessage(err, 'No fue posible crear la reserva. Inténtalo de nuevo.'),
+        getErrorMessage(err, 'No fue posible actualizar la reserva. Inténtalo de nuevo.'),
       );
     } finally {
       setSubmitting(false);
     }
   }
 
-  const title = mode === 'staff' ? 'Crear reserva (staff)' : 'Nueva reserva';
-  const submitLabel = mode === 'staff' ? 'Reservar para el huésped' : 'Confirmar reserva';
-
   return (
     <div
       className="fixed inset-0 z-50 flex items-center justify-center px-4"
       role="dialog"
       aria-modal="true"
-      aria-labelledby="reservation-form-title"
+      aria-labelledby="edit-reservation-title"
     >
       <button
         type="button"
@@ -178,11 +162,11 @@ export function ReservationFormModal({
       <div className="pointer-events-auto relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl ring-1 ring-black/5 animate-[popIn_180ms_ease-out]">
         <header className="flex items-start justify-between gap-3">
           <div>
-            <h2 id="reservation-form-title" className="text-lg font-semibold text-slate-900">
-              {title}
+            <h2 id="edit-reservation-title" className="text-lg font-semibold text-slate-900">
+              Editar reserva
             </h2>
             <p className="mt-1 text-sm text-slate-500">
-              Selecciona la habitación y las fechas de tu estadía.
+              Actualiza las fechas o la habitación. El titular no se modifica aquí.
             </p>
           </div>
           <button
@@ -203,38 +187,18 @@ export function ReservationFormModal({
             role="status"
             className="mt-4 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700"
           >
-            ¡Reserva creada con éxito!
+            ¡Reserva actualizada con éxito!
           </div>
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4" noValidate>
-          {mode === 'staff' && (
-            <div>
-              <label htmlFor="user_email" className="block text-sm font-medium text-slate-700">
-                Email del huésped
-              </label>
-              <input
-                id="user_email"
-                ref={firstFieldRef}
-                type="email"
-                value={form.user_email}
-                onChange={(e) => update('user_email', e.target.value)}
-                className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
-                aria-invalid={!!errors.user_email}
-              />
-              {errors.user_email && (
-                <p className="mt-1 text-xs text-rose-600">{errors.user_email}</p>
-              )}
-            </div>
-          )}
-
           <div>
-            <label htmlFor="room_number" className="block text-sm font-medium text-slate-700">
+            <label htmlFor="edit-room_number" className="block text-sm font-medium text-slate-700">
               Habitación
             </label>
             <select
-              id="room_number"
-              ref={mode === 'guest' ? firstFieldRef : undefined}
+              id="edit-room_number"
+              ref={firstFieldRef}
               value={form.room_number}
               onChange={(e) => update('room_number', e.target.value)}
               className="mt-1 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-200"
@@ -258,11 +222,11 @@ export function ReservationFormModal({
 
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="checkin_date" className="block text-sm font-medium text-slate-700">
+              <label htmlFor="edit-checkin_date" className="block text-sm font-medium text-slate-700">
                 Check-in
               </label>
               <input
-                id="checkin_date"
+                id="edit-checkin_date"
                 type="datetime-local"
                 value={form.checkin_date}
                 onChange={(e) => update('checkin_date', e.target.value)}
@@ -275,11 +239,11 @@ export function ReservationFormModal({
             </div>
 
             <div>
-              <label htmlFor="checkout_date" className="block text-sm font-medium text-slate-700">
+              <label htmlFor="edit-checkout_date" className="block text-sm font-medium text-slate-700">
                 Check-out
               </label>
               <input
-                id="checkout_date"
+                id="edit-checkout_date"
                 type="datetime-local"
                 value={form.checkout_date}
                 onChange={(e) => update('checkout_date', e.target.value)}
@@ -315,16 +279,15 @@ export function ReservationFormModal({
               {submitting ? (
                 <>
                   <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white/60 border-t-white" />
-                  <span>Enviando…</span>
+                  <span>Guardando…</span>
                 </>
               ) : (
-                submitLabel
+                'Guardar cambios'
               )}
             </button>
           </div>
         </form>
 
-        {/* Spinner accesible para usuarios que necesiten pista visual al cargar el modal */}
         {!success && submitting && <Spinner label="" />}
       </div>
     </div>

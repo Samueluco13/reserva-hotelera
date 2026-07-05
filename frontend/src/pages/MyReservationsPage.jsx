@@ -1,9 +1,15 @@
 import { useEffect, useState } from 'react';
 import { Spinner } from '@/components/Spinner';
 import { ReservationFormModal } from '@/components/ReservationFormModal';
+import { EditReservationModal } from '@/components/EditReservationModal';
+import { ConfirmDialog } from '@/components/ConfirmDialog';
 import { RequireAuth } from '@/components/RequireAuth';
-import { getMyReservations } from '@/services/reservations';
+import {
+  getMyReservations,
+  updateReservationStatus,
+} from '@/services/reservations';
 import { getRooms, getRoomTypes } from '@/services/rooms';
+import { getErrorMessage } from '@/lib/errors';
 
 const STATUS_STYLES = {
   active: { label: 'Activa', classes: 'bg-emerald-100 text-emerald-700' },
@@ -23,8 +29,10 @@ function formatDate(value) {
   return DATE_FORMAT.format(date);
 }
 
-function ReservationCard({ reservation, roomType }) {
+function ReservationCard({ reservation, roomType, onEdit, onRequestCancel }) {
   const status = STATUS_STYLES[reservation.status] ?? STATUS_STYLES.active;
+  const canCancel = reservation.status !== 'cancelled';
+
   return (
     <article className="flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
       <header className="flex items-start justify-between gap-3">
@@ -52,13 +60,35 @@ function ReservationCard({ reservation, roomType }) {
           <p className="font-medium text-slate-800">{formatDate(reservation.checkout_date)}</p>
         </div>
       </div>
+
+      <footer className="flex flex-wrap justify-end gap-2 border-t border-slate-100 pt-4">
+        <button
+          type="button"
+          onClick={onEdit}
+          className="rounded-md border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-slate-100"
+        >
+          Editar
+        </button>
+        {canCancel && (
+          <button
+            type="button"
+            onClick={onRequestCancel}
+            className="rounded-md border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-700 transition hover:bg-rose-50"
+          >
+            Cancelar reserva
+          </button>
+        )}
+      </footer>
     </article>
   );
 }
 
 function MyReservationsContent() {
   const [state, setState] = useState({ kind: 'loading' });
-  const [modalOpen, setModalOpen] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [editing, setEditing] = useState(null);
+  const [cancelling, setCancelling] = useState(null);
+  const [actionError, setActionError] = useState(null);
 
   const load = () => {
     setState({ kind: 'loading' });
@@ -80,8 +110,22 @@ function MyReservationsContent() {
   }, []);
 
   function handleCreated() {
-    // Al cerrar el modal con éxito, refrescamos la lista.
     load();
+  }
+
+  async function handleConfirmCancel() {
+    if (!cancelling) return;
+    const id = cancelling.id;
+    setCancelling(null);
+    setActionError(null);
+    try {
+      await updateReservationStatus(id, 'cancelled');
+      load();
+    } catch (err) {
+      setActionError(
+        getErrorMessage(err, 'No fue posible cancelar la reserva. Inténtalo de nuevo.'),
+      );
+    }
   }
 
   return (
@@ -95,12 +139,25 @@ function MyReservationsContent() {
         </div>
         <button
           type="button"
-          onClick={() => setModalOpen(true)}
+          onClick={() => setCreateOpen(true)}
           className="self-start rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
         >
           Nueva reserva
         </button>
       </section>
+
+      {actionError && (
+        <div className="mb-4 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          {actionError}
+          <button
+            type="button"
+            onClick={() => setActionError(null)}
+            className="ml-3 text-rose-700 underline"
+          >
+            Cerrar
+          </button>
+        </div>
+      )}
 
       {state.kind === 'loading' && <Spinner label="Cargando tus reservas…" />}
 
@@ -134,6 +191,8 @@ function MyReservationsContent() {
                 key={reservation.id}
                 reservation={reservation}
                 roomType={roomType}
+                onEdit={() => setEditing(reservation)}
+                onRequestCancel={() => setCancelling(reservation)}
               />
             );
           })}
@@ -142,14 +201,40 @@ function MyReservationsContent() {
 
       {state.kind === 'ready' && (
         <ReservationFormModal
-          open={modalOpen}
-          onClose={() => setModalOpen(false)}
+          open={createOpen}
+          onClose={() => setCreateOpen(false)}
           onCreated={handleCreated}
           mode="guest"
           rooms={state.roomByNumber ? Array.from(state.roomByNumber.values()) : []}
           roomTypes={state.typeById ? Array.from(state.typeById.values()) : []}
         />
       )}
+
+      {state.kind === 'ready' && (
+        <EditReservationModal
+          open={!!editing}
+          reservation={editing}
+          onClose={() => setEditing(null)}
+          onUpdated={handleCreated}
+          rooms={state.roomByNumber ? Array.from(state.roomByNumber.values()) : []}
+          roomTypes={state.typeById ? Array.from(state.typeById.values()) : []}
+        />
+      )}
+
+      <ConfirmDialog
+        open={!!cancelling}
+        title="Cancelar reserva"
+        message={
+          cancelling
+            ? `¿Estás seguro de que quieres cancelar la reserva #${cancelling.id} de la habitación #${cancelling.room_number}? Esta acción no se puede deshacer.`
+            : ''
+        }
+        confirmLabel="Sí, cancelar reserva"
+        cancelLabel="Volver"
+        variant="danger"
+        onConfirm={handleConfirmCancel}
+        onCancel={() => setCancelling(null)}
+      />
     </main>
   );
 }

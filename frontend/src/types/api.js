@@ -57,6 +57,18 @@
  * @property {string} user_email
  * @property {string | null} [checkin_date]
  * @property {string | null} [checkout_date]
+ *
+ * @typedef {Object} ReservationUpdate
+ * @property {string | null} [checkin_date]
+ * @property {string | null} [checkout_date]
+ * @property {number} [room_number]
+ * @property {number} user_id  Requerido por el backend en PATCH.
+ *
+ * @typedef {Object} ReservationUpdateStatus
+ * @property {ReservationStatus} status
+ *
+ * @typedef {Object} ReservationUpdateHolder
+ * @property {string} new_email
  */
 
 export {};
