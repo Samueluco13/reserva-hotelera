@@ -36,6 +36,15 @@
  * @property {string} name
  * @property {number} price
  *
+ * @typedef {Object} RoomCreate
+ * @property {number} number
+ * @property {RoomStatus} [status]
+ * @property {number} type_id
+ *
+ * @typedef {Object} RoomUpdate
+ * @property {RoomStatus} [status]
+ * @property {number} [type_id]
+ *
  * @typedef {Object} RoomTypeCreate
  * @property {string} name
  * @property {number} price

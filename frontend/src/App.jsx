@@ -8,6 +8,7 @@ import { NotFoundPage } from '@/pages/NotFoundPage';
 import { MyReservationsPage } from '@/pages/MyReservationsPage';
 import { AllReservationsPage } from '@/pages/AllReservationsPage';
 import { RoomTypesPage } from '@/pages/RoomTypesPage';
+import { RoomsPage } from '@/pages/RoomsPage';
 
 export function App() {
   return (
@@ -22,6 +23,7 @@ export function App() {
             <Route path="/my-reservations" element={<MyReservationsPage />} />
             <Route path="/reservations" element={<AllReservationsPage />} />
             <Route path="/room-types" element={<RoomTypesPage />} />
+            <Route path="/rooms" element={<RoomsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
           <footer className="mt-auto border-t border-slate-200 bg-white py-4 text-center text-xs text-slate-500">

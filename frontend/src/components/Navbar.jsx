@@ -72,6 +72,19 @@ export function Navbar() {
               </NavLink>
             )}
 
+            {isStaff && (
+              <NavLink
+                to="/rooms"
+                className={({ isActive }) =>
+                  `rounded-md px-3 py-1.5 transition ${
+                    isActive ? 'bg-blue-50 text-blue-700' : 'text-slate-600 hover:text-blue-700'
+                  }`
+                }
+              >
+                Habitaciones
+              </NavLink>
+            )}
+
             {isAuthenticated && user ? (
               <>
                 <span className="hidden text-slate-500 sm:inline">
